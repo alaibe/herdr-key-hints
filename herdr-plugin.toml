@@ -1,0 +1,67 @@
+id = "alaibe.key-hints"
+name = "Key hints"
+version = "0.1.0"
+min_herdr_version = "0.9.5"
+description = "Every key Herdr answers to in one sheet, and on macOS the keys under ⌘ or ⌃ while you hold it."
+platforms = ["linux", "macos"]
+
+# Once `hold-on` has turned the watcher on, each Herdr start rebuilds it if watcher/main.swift changed (a plugin
+# update) and restarts it with this Herdr. Until then it does nothing.
+[[startup]]
+command = ["sh", "watcher/setup.sh", "refresh"]
+platforms = ["macos"]
+
+[[actions]]
+id = "sheet"
+title = "Key hints: every key"
+contexts = ["global"]
+command = ["sh", "run", "open", "sheet"]
+
+[[actions]]
+id = "hold-on"
+title = "Key hints: show the keys under ⌘ or ⌃ while it is held"
+contexts = ["global"]
+command = ["sh", "watcher/setup.sh", "on"]
+platforms = ["macos"]
+
+[[actions]]
+id = "hold-off"
+title = "Key hints: stop showing keys on a held ⌘ or ⌃"
+contexts = ["global"]
+command = ["sh", "watcher/setup.sh", "off"]
+platforms = ["macos"]
+
+# The watcher invokes these when it sees a hold; each opens the card for that modifier.
+[[actions]]
+id = "hold-cmd"
+title = "Key hints: the ⌘ keys"
+contexts = ["global"]
+command = ["sh", "run", "open", "hold", "cmd"]
+platforms = ["macos"]
+
+[[actions]]
+id = "hold-cmd-shift"
+title = "Key hints: the ⌘⇧ keys"
+contexts = ["global"]
+command = ["sh", "run", "open", "hold", "cmd+shift"]
+platforms = ["macos"]
+
+[[actions]]
+id = "hold-ctrl"
+title = "Key hints: the ⌃ keys"
+contexts = ["global"]
+command = ["sh", "run", "open", "hold", "ctrl"]
+platforms = ["macos"]
+
+# The actions above open these with a width and height that fit what they show.
+[[panes]]
+id = "sheet"
+title = "Keys"
+placement = "popup"
+command = ["sh", "run", "sheet"]
+
+[[panes]]
+id = "hold"
+title = "Keys"
+placement = "popup"
+command = ["sh", "run", "hold"]

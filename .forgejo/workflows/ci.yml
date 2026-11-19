@@ -1,0 +1,92 @@
+# Checks every push against the shared code standard (homeserver's AGENTS.md › Code standards): the shell scripts, the
+# Python and the watcher's Swift. It runs on git.laibe.cc's home runner and publishes nothing: the GitHub mirror is
+# what `herdr plugin install` and the marketplace read. The watcher isn't compiled here, since it needs AppKit and the
+# home runner has no Mac; `swift format lint` reads it without building.
+
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SHELLCHECK_VERSION: 0.11.0
+  SHFMT_VERSION: 3.14.1
+  RUFF_VERSION: 0.17.5
+
+jobs:
+  check:
+    runs-on: home-linux
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      # shellcheck and shfmt at the versions in env, on the PATH from the next step on.
+      - name: Tools
+        uses: https://github.com/taiki-e/install-action@v2
+        with:
+          tool: shellcheck@${{ env.SHELLCHECK_VERSION }},shfmt@${{ env.SHFMT_VERSION }}
+
+      # Ruff at the version in env, on the PATH from the next step on.
+      - name: Ruff
+        run: |
+          BIN="$HOME/.local/bin"
+          mkdir -p "$BIN"
+          echo "$BIN" >> "$GITHUB_PATH"
+          RUFF=ruff-x86_64-unknown-linux-gnu
+          URL="https://github.com/astral-sh/ruff/releases/download/$RUFF_VERSION"
+          curl -fsSL "$URL/$RUFF.tar.gz" | tar -xz --strip-components=1 -C "$BIN" "$RUFF/ruff"
+          "$BIN/ruff" --version
+          python3 --version
+
+      # Every tracked file with an sh or bash shebang.
+      - name: Shell scripts
+        run: |
+          git ls-files -z | while IFS= read -r -d '' file; do
+            if head -c 40 "$file" | grep -qE '^#!.*(bash|/sh)'; then printf '%s\0' "$file"; fi
+          done > "$RUNNER_TEMP/shell"
+          tr '\0' '\n' < "$RUNNER_TEMP/shell"
+
+      # shfmt and ruff format.
+      - name: Format
+        run: |
+          xargs -0 -r shfmt -d -i 4 -ci -bn < "$RUNNER_TEMP/shell"
+          ruff format --diff
+
+      # shellcheck, sh -n and ruff check.
+      - name: Lint
+        run: |
+          xargs -0 -r shellcheck -S warning < "$RUNNER_TEMP/shell"
+          xargs -0 -r -n 1 sh -n < "$RUNNER_TEMP/shell"
+          ruff check
+
+      # unittest: reading bindings and laying out the card. Needs Python 3.11 or newer, as the plugin does.
+      - name: Tests
+        run: python3 -m unittest discover tests
+
+  swift:
+    runs-on: home-linux
+    container:
+      # Swift 6.4, as Xcode's swift-format on the Mac; the slim images have no toolchain.
+      image: swift:6.4.2-noble
+    timeout-minutes: 10
+    steps:
+      # The image has git but not the Node actions/checkout runs on.
+      - name: Node
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq --no-install-recommends nodejs > /dev/null
+
+      - uses: actions/checkout@v4
+
+      # swift format with .swift-format's four spaces and 120 columns. --strict fails on any finding, formatting
+      # included.
+      - name: Lint
+        run: |
+          swift format --version
+          swift format lint --strict --recursive .

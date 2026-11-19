@@ -1,0 +1,14 @@
+#!/bin/sh
+# Runs key_hints.py with a Python new enough for tomllib (3.11). Herdr starts plugin commands with its server's PATH,
+# which under launchd leaves out Homebrew, so the usual install places are tried too. KEY_HINTS_PYTHON, set in the
+# Herdr server's environment, names one outright.
+dir=$(dirname "$0")
+for python in "${KEY_HINTS_PYTHON:-}" python3 /opt/homebrew/bin/python3 /usr/local/bin/python3 python3.13 python3.12 python3.11; do
+    [ -n "$python" ] || continue
+    command -v "$python" >/dev/null 2>&1 || continue
+    if "$python" -c 'import sys; sys.exit(sys.version_info < (3, 11))' 2>/dev/null; then
+        exec "$python" "$dir/key_hints.py" "$@"
+    fi
+done
+echo "key-hints needs Python 3.11 or newer, for tomllib. Install one, or set KEY_HINTS_PYTHON to it." >&2
+exit 1
