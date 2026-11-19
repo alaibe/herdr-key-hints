@@ -113,6 +113,9 @@ TERMINALS = [
     "com.apple.Terminal",
 ]
 
+# How long a modifier is held before its card opens: long enough that ⌘C or ⌃C never flashes it.
+DELAY = 0.45
+
 # Layout. A section fills ROWS rows before the card adds a column, so a dozen keys read as two short columns rather
 # than one long one; a short terminal gets more columns instead.
 ROWS = 6
@@ -483,6 +486,10 @@ def hold() -> None:
     which = which if which in HOLDS else "cmd"
     keep = float(os.environ.get("KEY_HINTS_FOR") or 0)
     modifiers = Modifiers() if sys.platform == "darwin" and not keep else None
+    # The watcher saw no key for the whole hold. One since then was pressed while this popup started, and has already
+    # reached Herdr (⌘T opened its tab), so the card would only be in the way.
+    if modifiers and (modifiers.held() != which or modifiers.since_key() < hold_delay()):
+        return
     show(card_for("hold", which, *inner_size()))
 
     fd = sys.stdin.fileno()
@@ -502,6 +509,11 @@ def hold() -> None:
     finally:
         termios.tcsetattr(fd, termios.TCSADRAIN, saved)
         restore()
+
+
+def hold_delay() -> float:
+    delay = plugin_config().get("hold", {}).get("delay", DELAY)
+    return float(delay) if isinstance(delay, int | float) and delay > 0 else DELAY
 
 
 def request(method: str, params: dict) -> dict:
@@ -538,6 +550,14 @@ def open_popup(entry: str, which: str | None = None) -> None:
         width, height = terminal_area()
     except (OSError, HerdrError):
         width, height = 80, 24
+    # Nothing bound under a held modifier opens nothing, rather than a popup that takes the next key to say so. Nor
+    # does a hold already over, or one a key interrupted while this started; hold() checks again once it is up.
+    if which and not any(keys for _, keys in sections(bindings(), which)):
+        return
+    if which and sys.platform == "darwin" and not os.environ.get("KEY_HINTS_FOR"):
+        modifiers = Modifiers()
+        if modifiers.held() != which or modifiers.since_key() < hold_delay():
+            return
     card = card_for(entry, which, width - CHROME_X - 4, height - CHROME_Y - 2)
     env = {"KEY_HINTS_COLUMNS": str(card.columns)}
     if which:
@@ -565,7 +585,7 @@ def open_popup(entry: str, which: str | None = None) -> None:
 def launch_agent(label: str, binary: str) -> None:
     config = plugin_config().get("hold", {})
     apps = config.get("apps", TERMINALS)
-    delay = config.get("delay", 0.45)
+    delay = config.get("delay", DELAY)
     if not (isinstance(apps, list) and all(isinstance(app, str) for app in apps)):
         sys.exit('key-hints: [hold] apps must be a list of bundle ids, such as ["com.mitchellh.ghostty"]')
     if not isinstance(delay, int | float) or delay <= 0:

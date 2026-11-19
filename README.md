@@ -61,7 +61,7 @@ herdr plugin action invoke hold-on --plugin alaibe.key-hints
 This builds a small watcher with `swiftc` (Xcode's command line tools: `xcode-select --install`), installs it as the
 LaunchAgent `alaibe.key-hints.watcher` and starts it. From then on, holding ⌘, ⌘⇧ or ⌃ for 0.45 s in a terminal
 opens the card for that modifier; ⌃ also lists the prefix bindings, when the prefix is a ⌃ chord. A key pressed
-during the hold, as in ⌘C, opens nothing.
+during the hold, as in ⌘C, opens nothing, and so does a modifier with nothing bound under it.
 
 A terminal program never sees a modifier pressed on its own, and Herdr plugins can't watch keys, so the hold is noticed
 outside Herdr. The watcher polls the modifier state while a terminal is frontmost, and costs nothing otherwise. It
@@ -75,7 +75,7 @@ the pane underneath, and no API a plugin can use to hand a key back.
 The watcher binary lives in the plugin's state directory rather than its install directory, which moves with each
 update. Every Herdr start rebuilds it if an update changed `watcher/main.swift`.
 
-To turn it off:
+To turn it off, and before `herdr plugin uninstall`, which would leave the LaunchAgent behind:
 
 ```sh
 herdr plugin action invoke hold-off --plugin alaibe.key-hints
