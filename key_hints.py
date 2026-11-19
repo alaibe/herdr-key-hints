@@ -597,10 +597,11 @@ def main() -> None:
         sheet()
     elif command == "hold":
         hold()
-    elif command == "open" and args[1:2] == ["sheet"]:
-        open_popup("sheet")
-    elif command == "open" and args[1:2] == ["hold"] and args[2:3] and args[2] in HOLDS:
-        open_popup("hold", args[2])
+    elif command == "open" and (args[1:2] == ["sheet"] or (args[1:2] == ["hold"] and args[2:3] and args[2] in HOLDS)):
+        try:
+            open_popup(args[1], args[2] if args[1] == "hold" else None)
+        except (OSError, HerdrError) as error:
+            sys.exit(f"key-hints: Herdr didn't open the {args[1]}: {error}")
     elif command == "print":
         which = option(args, "--hold")
         if which is not None and which not in HOLDS:
