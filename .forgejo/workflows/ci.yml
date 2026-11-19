@@ -1,7 +1,8 @@
 # Checks every push against the shared code standard (homeserver's AGENTS.md › Code standards): the shell scripts, the
-# Python and the watcher's Swift. It runs on git.laibe.cc's home runner and publishes nothing: the GitHub mirror is
-# what `herdr plugin install` and the marketplace read. The watcher isn't compiled here, since it needs AppKit and the
-# home runner has no Mac; `swift format lint` reads it without building.
+# Python and the watcher's Swift. It publishes nothing: the GitHub mirror is what `herdr plugin install` and the
+# marketplace read. It runs on the home runner (homeserver's forgejo-runner/); actions-alerts.sh reports a failure
+# like any other. The watcher isn't compiled here, since it needs AppKit and the home runner has no Mac; `swift format
+# lint` reads it without building.
 
 name: CI
 
@@ -18,6 +19,8 @@ env:
   SHELLCHECK_VERSION: 0.11.0
   SHFMT_VERSION: 3.14.1
   RUFF_VERSION: 0.17.5
+  # The oldest Python the plugin runs on (tomllib arrived in 3.11). The runner's image has 3.10.
+  PYTHON_VERSION: '3.11'
 
 jobs:
   check:
@@ -25,6 +28,16 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+
+      # The Node in .node-version, as in every repository (the runner's image has its own).
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+
+      # Python at the version in env, for the tests.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
 
       # shellcheck and shfmt at the versions in env, on the PATH from the next step on.
       - name: Tools
@@ -43,6 +56,7 @@ jobs:
           curl -fsSL "$URL/$RUFF.tar.gz" | tar -xz --strip-components=1 -C "$BIN" "$RUFF/ruff"
           "$BIN/ruff" --version
           python3 --version
+          echo "node $(node --version)"
 
       # Every tracked file with an sh or bash shebang.
       - name: Shell scripts
@@ -58,11 +72,11 @@ jobs:
           xargs -0 -r shfmt -d -i 4 -ci -bn < "$RUNNER_TEMP/shell"
           ruff format --diff
 
-      # shellcheck, sh -n and ruff check.
+      # shellcheck, bash -n and ruff check.
       - name: Lint
         run: |
           xargs -0 -r shellcheck -S warning < "$RUNNER_TEMP/shell"
-          xargs -0 -r -n 1 sh -n < "$RUNNER_TEMP/shell"
+          xargs -0 -r -n 1 bash -n < "$RUNNER_TEMP/shell"
           ruff check
 
       # unittest: reading bindings and laying out the card. Needs Python 3.11 or newer, as the plugin does.
