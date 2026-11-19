@@ -553,10 +553,15 @@ def open_popup(entry: str, which: str | None = None) -> None:
     # Nothing bound under a held modifier opens nothing, rather than a popup that takes the next key to say so. Nor
     # does a hold already over, or one a key interrupted while this started; hold() checks again once it is up.
     if which and not any(keys for _, keys in sections(bindings(), which)):
+        print(f"no {which} card: nothing is bound under it")
         return
     if which and sys.platform == "darwin" and not os.environ.get("KEY_HINTS_FOR"):
         modifiers = Modifiers()
-        if modifiers.held() != which or modifiers.since_key() < hold_delay():
+        if modifiers.held() != which:
+            print(f"no {which} card: the hold ended while it started")
+            return
+        if modifiers.since_key() < hold_delay():
+            print(f"no {which} card: a key was pressed while it started")
             return
     card = card_for(entry, which, width - CHROME_X - 4, height - CHROME_Y - 2)
     env = {"KEY_HINTS_COLUMNS": str(card.columns)}
@@ -578,6 +583,7 @@ def open_popup(entry: str, which: str | None = None) -> None:
     except HerdrError as error:
         # Settings, copy mode or another popup is up. A hold shouldn't fight it; the sheet says why it didn't open.
         if which and error.code == "ui_busy":
+            print(f"no {which} card: another popup or Herdr's settings are open")
             return
         raise
 

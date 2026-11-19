@@ -75,15 +75,6 @@ func held(_ flags: CGEventFlags) -> String? {
     return nil
 }
 
-func describe(_ flags: CGEventFlags) -> String {
-    var names: [String] = []
-    if flags.contains(.maskCommand) { names.append("cmd") }
-    if flags.contains(.maskShift) { names.append("shift") }
-    if flags.contains(.maskControl) { names.append("ctrl") }
-    if flags.contains(.maskAlternate) { names.append("alt") }
-    return names.isEmpty ? "none" : names.joined(separator: "+")
-}
-
 // Asks Herdr to open the card for `hold`, without waiting for it, so polling carries on meanwhile.
 func invoke(_ hold: String) {
     guard let action = actions[hold] else { return }
@@ -94,8 +85,10 @@ func invoke(_ hold: String) {
     process.standardOutput = FileHandle.nullDevice
     process.standardError = errors
     process.terminationHandler = { finished in
+        // Success only means the action ran: it still opens nothing when the hold ended, or a key came, while it
+        // started. `herdr plugin log --plugin alaibe.key-hints` says which.
         if finished.terminationStatus == 0 {
-            log("opened the \(hold) card")
+            log("asked Herdr for the \(hold) card")
         } else {
             let detail = String(data: errors.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
             log("herdr refused the \(hold) card (\(finished.terminationStatus)): \(detail)")
@@ -114,6 +107,9 @@ final class Watcher: NSObject {
     var heldSince: Date?
 
     func start() {
+        // Only holds and what came of them are logged, a few lines a day; past a megabyte it starts over anyway.
+        let size = (try? FileManager.default.attributesOfItem(atPath: options.log)[.size] as? Int) ?? 0
+        if size > 1_000_000 { try? Data().write(to: URL(fileURLWithPath: options.log)) }
         NSWorkspace.shared.notificationCenter.addObserver(
             self, selector: #selector(activated(_:)),
             name: NSWorkspace.didActivateApplicationNotification, object: nil
@@ -133,7 +129,6 @@ final class Watcher: NSObject {
     func startPolling(_ app: String) {
         guard poll == nil else { return }
         poll = Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true) { [weak self] _ in self?.tick() }
-        log("\(app) frontmost, polling")
     }
 
     func stopPolling() {
@@ -142,14 +137,12 @@ final class Watcher: NSObject {
         poll = nil
         current = nil
         heldSince = nil
-        log("no terminal frontmost, stopped polling")
     }
 
     func tick() {
         let flags = CGEventSource.flagsState(.combinedSessionState)
         let now = held(flags)
         if now != current {
-            log("modifiers \(describe(flags)) -> \(now ?? "none")")
             current = now
             heldSince = now == nil ? nil : Date()
         }

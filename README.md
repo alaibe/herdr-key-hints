@@ -104,7 +104,8 @@ By default the watcher listens in Ghostty, kitty, WezTerm, iTerm2, Alacritty and
 ## When it doesn't show
 
 - `herdr plugin log --plugin alaibe.key-hints` has each action's output, `hold-on` included.
-- `~/Library/Logs/herdr-key-hints.log` has everything the watcher noticed: each hold, and why it opened nothing.
+- `~/Library/Logs/herdr-key-hints.log` has each hold the watcher saw: skipped because a key came during it, or
+  passed on to Herdr. The plugin log then says whether a card opened, and if not why.
 - `KEY_HINTS_FOR=5 sh run open hold cmd`, run in a Herdr pane from a clone of this repository, opens the ⌘ card for
   five seconds without holding anything.
 - `sh run print --hold ctrl --width 100` prints a card as text, without Herdr.

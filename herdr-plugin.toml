@@ -1,6 +1,6 @@
 id = "alaibe.key-hints"
 name = "Key hints"
-version = "0.1.0"
+version = "0.1.1"
 min_herdr_version = "0.9.5"
 description = "Every key Herdr answers to in one sheet, and on macOS the keys under ⌘ or ⌃ while you hold it."
 platforms = ["linux", "macos"]
