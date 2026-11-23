@@ -513,7 +513,7 @@ def hold() -> None:
 def hold_delay() -> float:
     config = plugin_config().get("hold", {})
     delay = config.get("delay", DELAY) if isinstance(config, dict) else DELAY
-    return float(delay) if isinstance(delay, int | float) and delay > 0 else DELAY
+    return float(delay) if type(delay) in (int, float) and delay > 0 else DELAY
 
 
 def request(method: str, params: dict) -> dict:
@@ -596,7 +596,7 @@ def launch_agent(label: str, binary: str) -> None:
     delay = config.get("delay", DELAY)
     if not (isinstance(apps, list) and all(isinstance(app, str) for app in apps)):
         sys.exit('key-hints: [hold] apps must be a list of bundle ids, such as ["com.mitchellh.ghostty"]')
-    if not isinstance(delay, int | float) or delay <= 0:
+    if type(delay) not in (int, float) or delay <= 0:
         sys.exit("key-hints: [hold] delay must be a number of seconds, such as 0.45")
     log = str(Path.home() / "Library" / "Logs" / "herdr-key-hints.log")
     arguments = [binary, "--herdr", herdr_bin(), "--plugin", PLUGIN_ID, "--apps", ",".join(apps)]
