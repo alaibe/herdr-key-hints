@@ -1,4 +1,2 @@
-# ruff formats and lints the Python (CI runs `ruff format --diff` and `ruff check`, with the version pinned in ci.yml's
-# env). The plugin's floor is Python 3.11, the first with tomllib.
 line-length = 120
 target-version = "py311"

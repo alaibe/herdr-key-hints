@@ -1,18 +1,14 @@
 #!/usr/bin/env python3
 """The keys Herdr answers to, in a popup sized to fit them.
 
-    run sheet                           every binding, until a key is pressed (the `sheet` pane)
-    run hold                            the keys under $KEY_HINTS_HOLD, until it is let go (the `hold` pane)
-    run open sheet                      open the sheet (the `sheet` action)
-    run open hold cmd|cmd+shift|ctrl    open the card for one held modifier (the `hold-*` actions)
-    run print [--hold MOD] [--width N] [--height N]
-                                        the sheet or a card without colour, laid out for that size
-    run json                            the bindings as JSON
-    run launch-agent LABEL BINARY       the macOS watcher's LaunchAgent, as a plist on stdout
-
-Bindings are read fresh each time: Herdr's config.toml (`[keys]` and every `[[keys.command]]`, whose `description` is
-the label shown), the defaults `herdr --default-config` lists for whatever that leaves alone, and Ghostty's copy,
-paste, font-size, fullscreen and palette keys when Ghostty is installed.
+run sheet                           every binding, until a key is pressed (the `sheet` pane)
+run hold                            the keys under $KEY_HINTS_HOLD, until it is let go (the `hold` pane)
+run open sheet                      open the sheet (the `sheet` action)
+run open hold cmd|cmd+shift|ctrl    open the card for one held modifier (the `hold-*` actions)
+run print [--hold MOD] [--width N] [--height N]
+                                    the sheet or a card without colour, laid out for that size
+run json                            the bindings as JSON
+run launch-agent LABEL BINARY       the macOS watcher's LaunchAgent, as a plist on stdout
 """
 
 from __future__ import annotations
@@ -39,7 +35,7 @@ from pathlib import Path
 PLUGIN_ID = os.environ.get("HERDR_PLUGIN_ID", "alaibe.key-hints")
 
 GLYPHS = {"cmd": "⌘", "super": "⌘", "ctrl": "⌃", "control": "⌃", "alt": "⌥", "option": "⌥", "shift": "⇧"}
-# Modifiers in this order whatever order the chord names them in, so `shift+cmd+k` and `cmd+shift+k` read alike.
+# One order, so `shift+cmd+k` and `cmd+shift+k` read alike.
 MODIFIERS = "⌘⌃⌥⇧"
 NAMED = {
     "minus": "-",
@@ -63,8 +59,7 @@ NAMED = {
     "down": "↓",
 }
 
-# Herdr's action names, where the plain words would mislead or run long. The rest are turned from snake_case into
-# words, with "workspace" read as "space", which is what Herdr's UI calls one.
+# Where Herdr's action names would mislead or run long.
 LABELS = {
     "help": "all Herdr keys",
     "goto": "session navigator",
@@ -78,11 +73,10 @@ LABELS = {
     "zoom": "zoom pane",
     "toggle_sidebar": "sidebar",
 }
-# Not keys pressed in normal use: navigate-mode moves, the prefix itself and an image paste that only exists under
-# `herdr --remote`.
+# Not pressed in normal use; remote_image_paste only exists under `herdr --remote`.
 SKIP = re.compile(r"^(prefix|remote_image_paste|navigate_.*)$")
 
-# Ghostty's keys worth knowing inside Herdr. Its tabs, splits and windows are left out: Herdr does that job.
+# Ghostty's tabs, splits and windows are left out: Herdr does that job.
 GHOSTTY_ACTIONS = {
     "copy_to_clipboard": "copy",
     "paste_from_clipboard": "paste",
@@ -96,13 +90,12 @@ GHOSTTY_APP = "/Applications/Ghostty.app/Contents/MacOS/ghostty"
 
 DIRECTION = re.compile(r"^(.*?)\s*\b(left|down|up|right)$")
 
-# A card's sections, by what is pressed: one per modifier set, then the prefix bindings, then Ghostty's.
 PREFIX = "prefix"
 GHOSTTY = "Ghostty"
 ORDER = ["⌘", "⌘⇧", "⌃", "⌃⇧", "⌥", "⌥⇧"]
 HOLDS = {"cmd": "⌘", "cmd+shift": "⌘⇧", "ctrl": "⌃"}
 
-# The terminals the macOS watcher listens in unless config.toml's [hold] apps says otherwise.
+# The watcher's default [hold] apps.
 TERMINALS = [
     "com.mitchellh.ghostty",
     "net.kovidgoyal.kitty",
@@ -115,8 +108,6 @@ TERMINALS = [
 # How long a modifier is held before its card opens: long enough that ⌘C or ⌃C never flashes it.
 DELAY = 0.45
 
-# Layout. A section fills ROWS rows before the card adds a column, so a dozen keys read as two short columns rather
-# than one long one; a short terminal gets more columns instead.
 ROWS = 6
 GAP = 4
 KEY_GAP = 2
@@ -124,8 +115,7 @@ KEY_GAP = 2
 CHROME_X = 2 + 2 * 3
 CHROME_Y = 2 + 2 * 1
 
-# Keys are the one accent, in the terminal theme's own cyan; section titles are bold. Nothing is dimmed, so every
-# line keeps the theme's full contrast.
+# Nothing is dimmed, so every line keeps the theme's full contrast.
 KEY_STYLE = "\x1b[1;36m"
 TITLE_STYLE = "\x1b[1m"
 RESET = "\x1b[0m"
@@ -220,8 +210,7 @@ def ghostty_keys() -> list[tuple[str, str]]:
         return []
     found: dict[str, str] = {}
     for line in text.splitlines():
-        # Lazy, so `super+==increase_font_size` reads as the key `super+=`. Only chords: Ghostty also binds the
-        # keyboard's own copy and paste keys, which no one presses inside Herdr.
+        # Lazy, so `super+==increase_font_size` is the key `super+=`; chords only, not the copy and paste keys.
         bind = re.match(r"keybind = ((?:super|ctrl|alt|shift)\+.+?)=([a-z_]+)", line)
         if bind and bind[2] in GHOSTTY_ACTIONS and bind[2] not in found:
             found[bind[2]] = bind[1]
@@ -307,11 +296,7 @@ def prefix_cap() -> str:
 
 
 def sections(keys: list[Key], hold: str | None = None) -> list[tuple[str | None, list[Key]]]:
-    """The card's sections, each with its title. A section of direct chords needs none: each key shows its modifiers.
-
-    With `hold`, only what is pressed with that modifier: its chords, Ghostty's under it, and the prefix bindings when
-    the prefix is a chord of the same modifier.
-    """
+    """The card's sections with their titles; with `hold`, only what is pressed with that modifier."""
     prefix_mods, prefix = prefix_cap()
     if hold:
         held = HOLDS[hold]
@@ -444,8 +429,7 @@ def sheet() -> None:
 
 
 class Modifiers:
-    """CoreGraphics' modifier state and time since the last key press, both readable without Accessibility or Input
-    Monitoring. watcher/main.swift reads the same two."""
+    """CoreGraphics' modifier state and time since the last key press, readable without any permission."""
 
     COMBINED_SESSION, KEY_DOWN = 0, 10
     SHIFT, CTRL, ALT, CMD = 1 << 17, 1 << 18, 1 << 19, 1 << 20
@@ -476,16 +460,12 @@ class Modifiers:
 
 
 def hold() -> None:
-    """Draw the card for $KEY_HINTS_HOLD and stay until that modifier is let go or a key is pressed.
-
-    KEY_HINTS_FOR=<seconds> keeps it up that long instead, to look at it without holding anything.
-    """
+    """The card for $KEY_HINTS_HOLD until it is let go or a key comes; KEY_HINTS_FOR=<seconds> keeps it that long."""
     which = os.environ.get("KEY_HINTS_HOLD", "cmd")
     which = which if which in HOLDS else "cmd"
     keep = float(os.environ.get("KEY_HINTS_FOR") or 0)
     modifiers = Modifiers() if sys.platform == "darwin" and not keep else None
-    # The watcher saw no key for the whole hold. One since then was pressed while this popup started, and has already
-    # reached Herdr (⌘T opened its tab), so the card would only be in the way.
+    # A key pressed while this started has already reached Herdr (⌘T opened its tab): the card would be in the way.
     if modifiers and (modifiers.held() != which or modifiers.since_key() < hold_delay()):
         return
     show(card_for("hold", which, *inner_size()))
@@ -550,8 +530,7 @@ def open_popup(entry: str, which: str | None = None) -> None:
         width, height = terminal_area()
     except (OSError, HerdrError):
         width, height = 80, 24
-    # Nothing bound under a held modifier opens nothing, rather than a popup that takes the next key to say so. Nor
-    # does a hold already over, or one a key interrupted while this started; hold() checks again once it is up.
+    # A popup takes the next key, so none opens with nothing to show or the hold already over.
     if which and not any(keys for _, keys in sections(bindings(), which)):
         print(f"no {which} card: nothing is bound under it")
         return
@@ -581,7 +560,7 @@ def open_popup(entry: str, which: str | None = None) -> None:
     try:
         request("plugin.pane.open", params)
     except HerdrError as error:
-        # Settings, copy mode or another popup is up. A hold shouldn't fight it; the sheet says why it didn't open.
+        # Settings, copy mode or another popup is up: a hold doesn't fight it.
         if which and error.code == "ui_busy":
             print(f"no {which} card: another popup or Herdr's settings are open")
             return

@@ -1,7 +1,4 @@
-"""The parts of key_hints.py that don't need Herdr: reading bindings and laying out the card.
-
-Run from the repository's root with `python3 -m unittest discover tests`.
-"""
+"""Run from the repository root: python3 -m unittest discover tests."""
 
 import sys
 import unittest

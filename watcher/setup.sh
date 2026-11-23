@@ -1,12 +1,5 @@
 #!/bin/sh
-# Turns the macOS hold watcher on or off, and keeps it current. Herdr runs it with the plugin's environment.
-#
-#   setup.sh on        build the watcher, install its LaunchAgent and start it (the `hold-on` action)
-#   setup.sh off       stop it and remove the LaunchAgent (the `hold-off` action)
-#   setup.sh refresh   when it is on, rebuild it if watcher/main.swift changed and restart it (the startup hook)
-#
-# The binary lives in the plugin's state directory rather than beside this script: a GitHub install gets a new
-# directory with each update, and the LaunchAgent has to point at a file that stays.
+# The binary lives in the state directory: the install directory moves with each update.
 set -eu
 
 state="${HERDR_PLUGIN_STATE_DIR:?run this through Herdr: herdr plugin action invoke hold-on --plugin alaibe.key-hints}"

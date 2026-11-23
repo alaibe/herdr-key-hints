@@ -5,8 +5,7 @@ min_herdr_version = "0.9.5"
 description = "Every key Herdr answers to in one sheet, and on macOS the keys under ⌘ or ⌃ while you hold it."
 platforms = ["linux", "macos"]
 
-# Once `hold-on` has turned the watcher on, each Herdr start rebuilds it if watcher/main.swift changed (a plugin
-# update) and restarts it with this Herdr. Until then it does nothing.
+# Rebuilds the watcher after a plugin update; does nothing until hold-on.
 [[startup]]
 command = ["sh", "watcher/setup.sh", "refresh"]
 platforms = ["macos"]
@@ -31,7 +30,7 @@ contexts = ["global"]
 command = ["sh", "watcher/setup.sh", "off"]
 platforms = ["macos"]
 
-# The watcher invokes these when it sees a hold; each opens the card for that modifier.
+# The watcher invokes these on a hold.
 [[actions]]
 id = "hold-cmd"
 title = "Key hints: the ⌘ keys"
@@ -53,7 +52,7 @@ contexts = ["global"]
 command = ["sh", "run", "open", "hold", "ctrl"]
 platforms = ["macos"]
 
-# The actions above open these with a width and height that fit what they show.
+# Opened by the actions above, which size the popup to fit.
 [[panes]]
 id = "sheet"
 title = "Keys"
