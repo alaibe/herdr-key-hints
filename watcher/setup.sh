@@ -45,7 +45,10 @@ stop() {
 
 start() {
     mkdir -p "$(dirname "$agent")"
-    sh "$root/run" launch-agent "$label" "$binary" >"$agent.new"
+    sh "$root/run" launch-agent "$label" "$binary" >"$agent.new" || {
+        rm -f "$agent.new"
+        exit 1
+    }
     mv "$agent.new" "$agent"
     stop
     launchctl bootstrap "$domain" "$agent"
