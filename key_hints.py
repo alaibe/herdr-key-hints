@@ -11,8 +11,6 @@ run json                            the bindings as JSON
 run launch-agent LABEL BINARY       the macOS watcher's LaunchAgent, as a plist on stdout
 """
 
-from __future__ import annotations
-
 import json
 import math
 import os
