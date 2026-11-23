@@ -298,10 +298,9 @@ def merge_directions(keys: list[Key]) -> list[Key]:
 def bindings() -> list[Key]:
     config = plugin_config()
     labels = config.get("labels", {})
+    labels = {name: text for name, text in labels.items() if isinstance(text, str)} if isinstance(labels, dict) else {}
     ghostty = ghostty_keys() if config.get("ghostty", True) else []
-    return collect(
-        herdr_config().get("keys", {}), herdr_defaults(), ghostty, labels if isinstance(labels, dict) else {}
-    )
+    return collect(herdr_config().get("keys", {}), herdr_defaults(), ghostty, labels)
 
 
 def prefix_cap() -> str:
