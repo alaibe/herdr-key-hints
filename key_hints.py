@@ -95,7 +95,6 @@ GHOSTTY_ACTIONS = {
 GHOSTTY_APP = "/Applications/Ghostty.app/Contents/MacOS/ghostty"
 
 DIRECTION = re.compile(r"^(.*?)\s*\b(left|down|up|right)$")
-ARROWS = {"left": "←", "down": "↓", "up": "↑", "right": "→"}
 
 # A card's sections, by what is pressed: one per modifier set, then the prefix bindings, then Ghostty's.
 PREFIX = "prefix"
@@ -288,10 +287,10 @@ def merge_directions(keys: list[Key]) -> list[Key]:
         letter = key.cap.removeprefix(key.mods)
         if group in seen:
             first = merged[seen[group]]
-            merged[seen[group]] = Key(first.section, first.mods, first.cap + letter, first.label + ARROWS[found[2]])
+            merged[seen[group]] = Key(first.section, first.mods, first.cap + letter, first.label + NAMED[found[2]])
         else:
             seen[group] = len(merged)
-            merged.append(Key(key.section, key.mods, key.cap, f"{found[1]} {ARROWS[found[2]]}"))
+            merged.append(Key(key.section, key.mods, key.cap, f"{found[1]} {NAMED[found[2]]}"))
     return merged
 
 
