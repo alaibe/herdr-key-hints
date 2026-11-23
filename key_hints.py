@@ -12,7 +12,7 @@
 
 Bindings are read fresh each time: Herdr's config.toml (`[keys]` and every `[[keys.command]]`, whose `description` is
 the label shown), the defaults `herdr --default-config` lists for whatever that leaves alone, and Ghostty's copy,
-paste, font-size and fullscreen keys when Ghostty is installed.
+paste, font-size, fullscreen and palette keys when Ghostty is installed.
 """
 
 from __future__ import annotations
