@@ -512,7 +512,8 @@ def hold() -> None:
 
 
 def hold_delay() -> float:
-    delay = plugin_config().get("hold", {}).get("delay", DELAY)
+    config = plugin_config().get("hold", {})
+    delay = config.get("delay", DELAY) if isinstance(config, dict) else DELAY
     return float(delay) if isinstance(delay, int | float) and delay > 0 else DELAY
 
 
@@ -590,6 +591,8 @@ def open_popup(entry: str, which: str | None = None) -> None:
 
 def launch_agent(label: str, binary: str) -> None:
     config = plugin_config().get("hold", {})
+    if not isinstance(config, dict):
+        sys.exit("key-hints: [hold] must be a table, with apps and delay under it")
     apps = config.get("apps", TERMINALS)
     delay = config.get("delay", DELAY)
     if not (isinstance(apps, list) and all(isinstance(app, str) for app in apps)):
