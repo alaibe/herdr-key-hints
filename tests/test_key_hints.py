@@ -41,7 +41,7 @@ class Keycaps(unittest.TestCase):
         self.assertEqual(kh.keycap("shift+cmd+k"), ("⌘⇧", "⌘⇧K"))
 
     def test_named_keys_and_the_plus_key(self):
-        self.assertEqual(kh.keycap("prefix+minus".removeprefix("prefix+"))[1], "-")
+        self.assertEqual(kh.keycap("minus")[1], "-")
         self.assertEqual(kh.keycap("cmd++")[1], "⌘+")
         self.assertEqual(kh.keycap("shift+tab")[1], "⇧⇥")
 
