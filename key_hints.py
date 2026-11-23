@@ -532,7 +532,8 @@ def request(method: str, params: dict) -> dict:
     reply = json.loads(data or b"{}")
     if "error" in reply or "result" not in reply:
         error = reply.get("error") or {}
-        raise HerdrError(str(error.get("code", "no_reply")), str(error.get("message", data[:200])))
+        message = error.get("message", data[:200].decode(errors="replace").strip() or "empty reply")
+        raise HerdrError(str(error.get("code", "no_reply")), str(message))
     return reply["result"]
 
 
