@@ -20,19 +20,14 @@ jobs:
   check:
     runs-on: home-linux
     timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .node-version
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
+      - uses: https://github.com/actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Tools
-        uses: https://github.com/taiki-e/install-action@v2
+        uses: https://github.com/taiki-e/install-action@75a7c0f87bd666af3cdb75c5b9e9d03ab6044e6f # v2.90.6
         with:
           tool: shellcheck@${{ env.SHELLCHECK_VERSION }},shfmt@${{ env.SHFMT_VERSION }}
 
@@ -45,13 +40,20 @@ jobs:
           URL="https://github.com/astral-sh/ruff/releases/download/$RUFF_VERSION"
           curl -fsSL "$URL/$RUFF.tar.gz" | tar -xz --strip-components=1 -C "$BIN" "$RUFF/ruff"
           "$BIN/ruff" --version
-          python3 --version
-          echo "node $(node --version)"
 
+      - uses: https://github.com/actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .node-version
+
+      - uses: https://github.com/actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      # Every tracked file with a bash or sh shebang.
       - name: Shell scripts
         run: |
           git ls-files -z | while IFS= read -r -d '' file; do
-            if head -c 40 "$file" | grep -qE '^#!.*(bash|/sh)'; then printf '%s\0' "$file"; fi
+            if [ -f "$file" ] && head -c 40 "$file" | grep -qE '^#!.*(bash|/sh)'; then printf '%s\0' "$file"; fi
           done > "$RUNNER_TEMP/shell"
           tr '\0' '\n' < "$RUNNER_TEMP/shell"
 
@@ -72,18 +74,20 @@ jobs:
   # No Mac runner, so the watcher (AppKit) is linted, not compiled.
   swift:
     runs-on: home-linux
+    # Swift 6.4, as Xcode's swift-format on the Mac; the slim images have no toolchain.
     container:
-      # Xcode's swift-format version; the slim images have no toolchain.
       image: swift:6.4.2-noble
     timeout-minutes: 10
     steps:
       # The image has git but not the Node actions/checkout runs on.
       - name: Node
         run: |
+          # archive.ubuntu.com crawls from the home server and security.ubuntu.com doesn't answer: Ubuntu's French mirror.
+          sed -i -E 's#https?://(archive|security)\.ubuntu\.com/ubuntu#http://fr.archive.ubuntu.com/ubuntu#g' /etc/apt/sources.list /etc/apt/sources.list.d/*.sources 2>/dev/null || true
           apt-get update -qq
           apt-get install -y -qq --no-install-recommends nodejs > /dev/null
 
-      - uses: actions/checkout@v4
+      - uses: https://github.com/actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Lint
         run: |
