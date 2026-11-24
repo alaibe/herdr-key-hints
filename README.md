@@ -21,6 +21,8 @@ command = "alaibe.key-hints.sheet"
 description = "every key"
 ```
 
+## Usage
+
 On macOS, turn the hold card on (it builds a watcher with `swiftc` and installs a LaunchAgent), and off before
 uninstalling:
 
@@ -39,3 +41,12 @@ goto = "jump anywhere"
 apps = ["com.mitchellh.ghostty"]
 delay = 0.45
 ```
+
+## Development
+
+Python 3.11 and ruff 0.17.5; on macOS, Swift for the watcher. `python3 -m unittest discover tests` runs the tests, and
+`AGENTS.md` lists the checks CI runs.
+
+## License
+
+[MIT](LICENSE).
